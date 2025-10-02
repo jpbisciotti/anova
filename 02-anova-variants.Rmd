@@ -1,0 +1,190 @@
+---
+title: "ANOVA Variants"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(emmeans)
+library(car)
+```
+
+### ANOVA Variants
+
+There are three main ANOVA variants: 
+
+| Variant | Full Name | Used With | Example |
+|---------|-----------|-----------|---------|
+| **ANOVA** | Analysis of Variance | General linear models | Comparing means across groups |
+| **ANODE** | Analysis of Deviance | Generalized linear models | Comparing proportions, counts |
+| **ANCOVA** | Analysis of Covariance | Models with continuous covariates | Comparing means while adjusting for baseline |
+
+The choice depends on your data structure and distribution, not on the analysis approach.
+
+| When to Use | Choose | Test Statistic | Example Response |
+|-------------|--------|----------------|------------------|
+| Categorical predictors only, normal data | ANOVA | F-statistic | Plant height, blood pressure |
+| Categorical predictors, non-normal data | ANODE | χ² statistic | Success/failure, counts |
+| Categorical + continuous predictors | ANCOVA | F-statistic | Weight loss adjusted for baseline |
+
+---
+
+### ANOVA: Analysis of Variance
+
+ANOVA: 
+ - Use case to compare means across groups using only categorical predictors. 
+ - ANOVA tests whether group means differ. 
+ - Uses F-statistic based on variance decomposition.
+
+**Example:** Does fertilizer type affect plant growth?
+
+```{r anova}
+# Generate data
+set.seed(123)
+data_anova <- data.frame(
+  fertilizer = factor(rep(c("Control", "Type_A", "Type_B"), each = 20)),
+  growth = c(
+    rnorm(20, mean = 10, sd = 2),
+    rnorm(20, mean = 15, sd = 2),
+    rnorm(20, mean = 18, sd = 2)
+  )
+)
+
+# Fit linear model with categorical predictor only
+model_anova <- lm(growth ~ fertilizer, data = data_anova)
+
+# Analysis of Variance
+Anova(model_anova, type = 3)
+
+# Estimated means
+emmeans(model_anova, ~ fertilizer)
+
+# Pairwise comparisons
+pairs(emmeans(model_anova, ~ fertilizer))
+```
+
+---
+
+### ANODE: Analysis of Deviance: Binary Outcome
+
+ANODE: 
+- Use case to compare groups with generalized linear models (non-normal responses).
+- ANODE tests whether groups differ by comparing model deviances. 
+- Uses χ² statistic instead of F-statistic. 
+- Appropriate for binary, count, or other non-normal data.
+
+**Example:** Does treatment affect cure rate? (Binary outcome)
+
+```{r anode}
+# Generate binary outcome data
+set.seed(123)
+data_anode <- data.frame(
+  treatment = factor(rep(c("Control", "Drug_A", "Drug_B"), each = 50)),
+  cured = c(
+    rbinom(50, 1, prob = 0.40),
+    rbinom(50, 1, prob = 0.65),
+    rbinom(50, 1, prob = 0.80)
+  )
+)
+
+# Fit logistic regression (Generalized Linear Model)
+model_anode <- glm(cured ~ treatment, family = binomial(), data = data_anode)
+
+# Analysis of Deviance (uses chi-square statistic)
+anova(model_anode, test = "Chisq")
+
+# Alternative: Likelihood Ratio Test
+anova(model_anode, test = "LRT")
+
+# Estimated probabilities
+emmeans(model_anode, ~ treatment, type = "response")
+
+# Pairwise comparisons
+pairs(emmeans(model_anode, ~ treatment, type = "response"), reverse = TRUE)
+```
+
+---
+
+### ANODE: Analysis of Deviance: Count Outcome
+
+```{r anode_counts}
+# Generate count data (number of infections)
+set.seed(123)
+data_counts <- data.frame(
+  treatment = factor(rep(c("Control", "Vaccine_A", "Vaccine_B"), each = 30)),
+  infections = c(
+    rpois(30, lambda = 5),
+    rpois(30, lambda = 2),
+    rpois(30, lambda = 1)
+  )
+)
+
+# Fit Poisson regression (GLM for count data)
+model_poisson <- glm(infections ~ treatment, family = poisson(), data = data_counts)
+
+# Analysis of Deviance
+anova(model_poisson, test = "Chisq")
+
+# Estimated counts
+emmeans(model_poisson, ~ treatment, type = "response")
+```
+
+---
+
+### ANCOVA: Analysis of Covariance
+
+ANCOVA: 
+- Use case to compare group means while adjusting for a continuous covariate.
+- ANCOVA adjusts group comparisons for continuous covariates. 
+- The estimated means are "adjusted means" at the average covariate value. 
+- This reduces error variance and accounts for baseline differences.
+
+**Example:** Does diet affect weight loss, controlling for initial weight?
+
+```{r ancova}
+# Generate data with covariate
+set.seed(123)
+data_ancova <- data.frame(
+  diet = factor(rep(c("Control", "Diet_A", "Diet_B"), each = 25)),
+  initial_weight = rnorm(75, mean = 80, sd = 10)
+)
+
+# Weight loss depends on both diet AND initial weight
+data_ancova$weight_loss <- with(data_ancova, {
+  5 + # baseline
+  ifelse(diet == "Diet_A", 3, 0) + 
+  ifelse(diet == "Diet_B", 6, 0) +
+  0.1 * initial_weight + # heavier people lose more
+  rnorm(75, sd = 2)
+})
+
+# Fit model with categorical predictor AND continuous covariate
+model_ancova <- lm(weight_loss ~ diet + initial_weight, data = data_ancova)
+
+# Analysis of Covariance
+Anova(model_ancova, type = 3)
+
+# Estimated marginal means (adjusted for covariate)
+emmeans(model_ancova, ~ diet)
+
+# Pairwise comparisons (adjusted for initial weight)
+pairs(emmeans(model_ancova, ~ diet))
+```
+
+### Why use ANCOVA?
+
+ANCOVA has more power because it reduces unexplained variance.
+
+```{r ancova_comparison}
+# Without covariate adjustment
+model_no_cov <- lm(weight_loss ~ diet, data = data_ancova)
+
+# Fit model with categorical predictor AND continuous covariate
+model_ancova <- lm(weight_loss ~ diet + initial_weight, data = data_ancova)
+
+# Compare residual standard errors
+summary(model_no_cov)$sigma  # Without covariate
+summary(model_ancova)$sigma   # With covariate (smaller!)
+```
+
+---
