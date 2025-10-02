@@ -1,0 +1,160 @@
+---
+title: "Models used by ANOVA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(emmeans)
+library(quantreg)
+library(survival)
+```
+
+### Models used by ANOVA
+
+ANOVA works with various regression models that return different conditional functions:
+
+| Model               | Conditional Function  | Compares          |
+|---------------------|-----------------------|-------------------|
+| Linear regression   | E(Y\|X=x) = Xβ        | Arithmetic means  |
+| Logistic regression | logit(E(Y\|X=x)) = Xβ | Proportions (%)   |
+| Quantile regression | Q_τ(Y\|X=x) = Xβ      | Medians/quantiles |
+| Cox regression      | λ(Y\|X=x) = Xβ        | Hazards           |
+
+### Linear Regression: Comparing Means
+
+**Question:** Which treatment gives the lowest mean blood pressure?
+
+```{r linear}
+# Generate data
+set.seed(123)
+data_linear <- data.frame(
+  treatment = factor(rep(c("Placebo", "Drug_A", "Drug_B"), each = 30)),
+  blood_pressure = c(
+    rnorm(30, mean = 140, sd = 10),
+    rnorm(30, mean = 130, sd = 10),
+    rnorm(30, mean = 125, sd = 10)
+  )
+)
+
+# Fit model and test main effect
+model_lm <- lm(blood_pressure ~ treatment, data = data_linear)
+joint_tests(model_lm)
+
+# Estimated means
+emmeans(model_lm, ~ treatment)
+
+# Pairwise comparisons
+pairs(emmeans(model_lm, ~ treatment))
+```
+
+**Interpretation:** We're comparing arithmetic means of blood pressure across treatments.
+
+---
+
+### Logistic Regression: Comparing Proportions
+
+**Question:** Which treatment has the highest cure rate?
+
+```{r logistic}
+# Generate data
+set.seed(123)
+data_logistic <- data.frame(
+  treatment = factor(rep(c("Placebo", "Drug_A", "Drug_B"), each = 50)),
+  cured = c(
+    rbinom(50, 1, prob = 0.30),
+    rbinom(50, 1, prob = 0.60),
+    rbinom(50, 1, prob = 0.75)
+  )
+)
+
+# Fit model and test main effect
+model_logistic <- glm(cured ~ treatment, family = binomial(), data = data_logistic)
+anova(model_logistic, test = "LRT")
+
+# Estimated proportions (probabilities)
+emmeans(model_logistic, ~ treatment, type = "response")
+
+# Pairwise comparisons on probability scale
+pairs(emmeans(model_logistic, ~ treatment, type = "response"), reverse = TRUE)
+```
+
+**Interpretation:** We're comparing proportions (cure rates) across treatments.
+
+---
+
+## 3. Quantile Regression: Comparing Medians
+
+**Question:** Which treatment gives the shortest median recovery time?
+
+```{r quantile}
+# Generate data with outliers (median is robust to outliers)
+set.seed(123)
+data_quantile <- data.frame(
+  treatment = factor(rep(c("Placebo", "Drug_A", "Drug_B"), each = 30)),
+  recovery_time = c(
+    c(rnorm(27, mean = 20, sd = 3), 45, 50, 55),
+    c(rnorm(27, mean = 15, sd = 3), 35, 40, 42),
+    c(rnorm(27, mean = 10, sd = 3), 25, 28, 30)
+  )
+)
+
+# Fit quantile regression for median (tau = 0.5)
+model_quantile <- rq(recovery_time ~ treatment, tau = 0.5, data = data_quantile)
+joint_tests(model_quantile)
+
+# Estimated medians
+emmeans(model_quantile, ~ treatment)
+
+# Pairwise comparisons
+pairs(emmeans(model_quantile, ~ treatment))
+```
+
+**Interpretation:** We're comparing medians, which are robust to outliers unlike means.
+
+---
+
+## 4. Cox Regression: Comparing Hazards
+
+**Question:** Which treatment delays disease recurrence the longest?
+
+```{r cox}
+# Generate survival data
+set.seed(123)
+data_cox <- data.frame(
+  treatment = factor(rep(c("Placebo", "Drug_A", "Drug_B"), each = 40)),
+  time = c(
+    rexp(40, rate = 0.08),
+    rexp(40, rate = 0.05),
+    rexp(40, rate = 0.03)
+  ),
+  event = rbinom(120, 1, prob = 0.7)
+)
+
+# Fit Cox model and test main effect
+model_cox <- coxph(Surv(time, event) ~ treatment, data = data_cox)
+joint_tests(model_cox)
+
+# Pairwise comparisons of hazard ratios
+pairs(emmeans(model_cox, ~ treatment), type = "response")
+```
+
+**Interpretation:** We're comparing hazard rates (risk of event over time). Hazard ratio < 1 means lower risk.
+
+---
+
+### Summary
+
+The ANOVA framework across all models follows similar steps:
+
+1. Fit the appropriate regression model
+2. Test main effects with `joint_tests()` or `anova()`
+3. Estimate group values with `emmeans()`
+4. Compare groups with `pairs()`
+
+Only the **interpretation** changes based on what you're modeling:
+
+- **Linear:** Mean differences
+- **Logistic:** Probability or odds ratio differences
+- **Quantile:** Median (or other quantile) differences
+- **Cox:** Hazard ratio differences
