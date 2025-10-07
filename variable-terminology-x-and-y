@@ -1,0 +1,24 @@
+## Variable Terminology
+
+| Y                   | X                     | 
+|---------------------|-----------------------|
+| Dependent           | Independent           | 
+| Regressand          | Regressor             | 
+| Endogenous          | Exogenous             | 
+| Output              | Input                 | 
+
+And so on...
+
+"Y": 
+- response
+- target
+- measured
+- criterion
+- predicted
+- ...
+
+"X":
+- explanatory
+- covariates
+- predictor
+- ...
