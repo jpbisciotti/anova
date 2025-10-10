@@ -1,4 +1,4 @@
-# Statistical Tests: A Practitioner Guide to Comparing Groups
+# Statistical Tests Practitioner Guide
 
 ## The Core Problem
 
