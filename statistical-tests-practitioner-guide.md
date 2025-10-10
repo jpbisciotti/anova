@@ -38,7 +38,7 @@ Imagine comparing pain relief times between Drug A and Drug B using Mann-Whitney
 
 **What happens when you switch to non-parametric tests:**
 
-- **Your null hypothesis changes** from H0: mu1 = mu2(equal means) to H0: P(X₁ > X₂) = 0.5 (no stochastic superiority)
+- **Your null hypothesis changes** from H0: mu1 = mu2 (equal means) to H0: P(X1 > X2) = 0.5 (no stochastic superiority)
 - **Your results answer a different question** than you asked
 - **You can't report effect sizes** in the original units (e.g., "10 mg/dL difference")
 - **You can't make predictions** like "we expect the new treatment to increase scores by 5 points"
