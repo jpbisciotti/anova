@@ -10,9 +10,18 @@ Use ANOVA to answer questions such as:
 
 ANOVA (analysis of variance) is a structured statistical framework that compares two or more groups using (conditional) functions. 
 
+Sections below explain in the above-mentioned definition what is meant by: 
+- "Using condition functions"
+- "Structured statistical framework"
+- "Compare groups"
+
+But first, sections below cover: 
+- The common definition of ANOVA (less abstract, more specific/precise than above)
+- Requirements for ANOVA 
+
 ## Often, what is ANOVA
 
-ANOVA often is introduced as "a test to compare the means of two or more groups", which technically is true because ANOVA *can* be used to compare group means. However, this definition is narrow and misleading because, more generally, ANOVA can be used to compare groups values for any of the following (conditional) functions: 
+ANOVA often is introduced as "a test to compare the *means* of two or more groups", which technically is true because ANOVA *can* be used to compare group means. However, this definition is narrow and misleading because, more generally, ANOVA can be used to compare groups values for any of the following (conditional) functions: 
 
 | Model               | Conditional Function  | Compares          |
 |---------------------|-----------------------|-------------------|
@@ -21,7 +30,7 @@ ANOVA often is introduced as "a test to compare the means of two or more groups"
 | Quantile regression | Q_τ(Y\|X=x) = Xβ      | Medians/quantiles |
 | Cox regression      | λ(Y\|X=x) = Xβ        | Hazards           |
 
-The comparison of means, specifically, is just one application of the general ANOVA framework. 
+The comparison of *means* is just one application (the most common) of the general ANOVA framework. 
 
 ## Requirements for ANOVA
 
@@ -33,7 +42,7 @@ An ANOVA model design requires:
 
 *Note: the above-mentioned requirements have exceptions (e.g., MANOVA for multiple responses, ...)*
 
-## "Using Condition Functions"
+## What is meant by "Using Condition Functions"
 
 Consider the rate of success for individuals who received a treatment 
 - The rate of success is the function
@@ -46,7 +55,7 @@ A "conditional" function is calculated for each group:
 
 *Recall: a distribution is characterized by shape, center, and spread.*
 
-## "Structured Statistical Framework"
+## What is meant by "Structured Statistical Framework"
 
 ANOVA Framework may involve these key steps: 
 - Start with a model that represents how variables may relate
@@ -54,7 +63,7 @@ ANOVA Framework may involve these key steps:
 - From coefficients, get the condition distributions of the model function (e.g., the group means)
 - From group means, perform comparison (e.g., effects, contrasts)
 
-## "Compare Groups"
+## What is meant by "Compare Groups"
 
 ANOVA is used to compare groups, which may involve: 
 - Getting the difference between group means (effects)
