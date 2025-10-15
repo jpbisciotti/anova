@@ -36,7 +36,7 @@ An ANOVA model design requires:
 ## "Using Condition Functions"
 
 Consider the rate of success for individuals who received a treatment 
-- The rate of success if the function
+- The rate of success is the function
 - Individuals who received a treatment is a group 
 
 A "conditional" function is calculated for each group: 
