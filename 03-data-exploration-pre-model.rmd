@@ -3,7 +3,7 @@ title: "Pre-Modeling ANOVA EDA"
 output: html_document
 ---
 
-{r setup, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(car)
@@ -12,20 +12,21 @@ library(multcomp)
 
 # Create example dataset for demonstrations
 df <- PlantGrowth %>% rename(response = weight)
+```
 
-Pre-Modeling ANOVA EDA
+# Pre-Modeling ANOVA EDA
 
-Why Check Your Data Before Modeling
+## Why Check Your Data Before Modeling
 
 Always examine your data before you run ANOVA. Plots show you patterns that p-values can't reveal. Document what you find before you proceed to formal testing.
 
-Check Sample Size and Balance
+## Check Sample Size and Balance
 
-Assess your group sizes
+### Assess your group sizes
 
 Verify that your design has adequate power and balanced groups.
 
-{r sample-size}
+```{r sample-size}
 # Check group sizes and balance
 df_a <- df %>% 
   group_by(group) %>% 
@@ -39,18 +40,16 @@ df_a <- df %>%
 df_a %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-Questions to answer:
+**Questions to answer:**
 
-Are your groups balanced? Unbalanced designs affect power and the calculation of Type II/III sums of squares.
+-   **Are your groups balanced?** Unbalanced designs affect power and the calculation of Type II/III sums of squares.
+-   **Do you have major imbalances?** Look for maximum-to-minimum ratios exceeding 4:1.
+-   **Are any groups too small?** Groups with fewer than 10 observations may lack adequate power.
+-   **Is your total sample size adequate?** Run a power analysis to verify you can detect meaningful effects.
 
-Do you have major imbalances? Look for maximum-to-minimum ratios exceeding 4:1.
-
-Are any groups too small? Groups with fewer than 10 observations may lack adequate power.
-
-Is your total sample size adequate? Run a power analysis to verify you can detect meaningful effects.
-
-{r power-analysis}
+```{r power-analysis}
 # Power analysis for ANOVA
 # https://aaroncaldwell.us/SuperpowerBook/one-way-anova.html
 design_result <- Superpower::ANOVA_design(
@@ -66,14 +65,15 @@ simulation_result <- Superpower::ANOVA_power(
   verbose = FALSE
   )
 simulation_result
+```
 
-Check Distributions
+## Check Distributions
 
-Assess shape within each group
+### Assess shape within each group
 
 Check whether your data are symmetric or skewed.
 
-{r distribution-summary}
+```{r distribution-summary}
 # Compare means and medians by group
 df %>% 
   group_by(group) %>% 
@@ -85,59 +85,59 @@ df %>%
     )  %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-Questions to answer:
+**Questions to answer:**
 
-Is the distribution symmetric or skewed? Compare means and medians—similar values suggest symmetry.
+-   **Is the distribution symmetric or skewed?** Compare means and medians—similar values suggest symmetry.
+-   **For symmetric data:** Is the shape mound-shaped or uniform? Are the tails thin or thick?
+-   **For skewed data:** Note the direction (right-skewed = positive skew; left-skewed = negative skew).
 
-For symmetric data: Is the shape mound-shaped or uniform? Are the tails thin or thick?
-
-For skewed data: Note the direction (right-skewed = positive skew; left-skewed = negative skew).
-
-{r histograms}
+```{r histograms}
 # Histogram + Density by group
 ggplot(df, aes(x = response)) + 
   geom_density(fill = "steelblue", alpha = 0.7) + 
   geom_histogram(bins = 7, fill = "steelblue", alpha = 0.7) +
   facet_wrap(~group) + 
   theme_minimal()
+```
 
-Assess normality within each group
+### Assess normality within each group
 
 Check whether your data meet the normality assumption.
 
-{r qq-plots}
+```{r qq-plots}
 # QQ plots by group
 ggplot(df, aes(sample = response)) + 
   stat_qq() + stat_qq_line(color = "red") + 
   facet_wrap(~group) + 
   theme_minimal()
+```
 
-{r shapiro-test}
+```{r shapiro-test}
 # Formal normality tests by group
 df %>% 
   group_by(group) %>% 
   summarize(shapiro_p = shapiro.test(response)$p.value) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-Key points:
+**Key points:**
 
-Create QQ plots for each group. Points falling along the diagonal indicate normality.
-
-Compare histogram shapes to a normal distribution. Look for bell-shaped curves centered on the mean.
-
-For small samples: Assess whether departures are severe enough to matter given your limited data.
+-   **Create QQ plots for each group.** Points falling along the diagonal indicate normality.
+-   **Compare histogram shapes to a normal distribution.** Look for bell-shaped curves centered on the mean.
+-   **For small samples:** Assess whether departures are severe enough to matter given your limited data.
 
 Small departures from normality matter less with large sample sizes (Central Limit Theorem). Severe departures with small samples require remedial action.
 
-Compare Central Tendency
+## Compare Central Tendency
 
-Assess location differences across groups
+### Assess location differences across groups
 
 Determine whether your groups differ in meaningful ways.
 
-{r central-tendency}
+```{r central-tendency}
 # Summary statistics by group
 df %>% 
   group_by(group) %>% 
@@ -149,38 +149,38 @@ df %>%
     ) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-{r boxplot}
+```{r boxplot}
 # Quick visual comparison
 ggplot(df, aes(x = group, y = response, fill = group)) + 
   geom_boxplot(alpha = 0.7) + theme_minimal() + 
   theme(legend.position = "none")
+```
 
-Questions to answer:
+**Questions to answer:**
 
-How large are differences between means and medians? Look for both statistical and practical significance.
+-   **How large are differences between means and medians?** Look for both statistical and practical significance.
+-   **Is separation visually apparent?** Groups should show clear differences if ANOVA will detect them.
+-   **What's the magnitude of differences?** Consider fold-changes and standardized effect sizes.
+-   **Which factor levels drive observed differences?** Identify specific groups that appear distinct.
 
-Is separation visually apparent? Groups should show clear differences if ANOVA will detect them.
-
-What's the magnitude of differences? Consider fold-changes and standardized effect sizes.
-
-Which factor levels drive observed differences? Identify specific groups that appear distinct.
-
-{r effect-size}
+```{r effect-size}
 # Calculate effect sizes (Cohen's f)
 grand_mean <- mean(df$response)
 group_means <- df %>% group_by(group) %>% summarize(m = mean(response))
 sd_pooled <- sqrt(mean(tapply(df$response, df$group, var)))
 cohens_f <- sd(group_means$m) / sd_pooled
 cohens_f
+```
 
-Compare Variability
+## Compare Variability
 
-Check spread within groups
+### Check spread within groups
 
 Assess how much observations vary within each group.
 
-{r variability}
+```{r variability}
 # Compare variability across groups
 df %>% 
   group_by(group) %>% 
@@ -192,44 +192,44 @@ df %>%
   mutate(max_sd_ratio = max(sd) / min(sd)) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-Questions to answer:
+**Questions to answer:**
 
-Is variability wide or narrow? Compare ranges and standard deviations.
+-   **Is variability wide or narrow?** Compare ranges and standard deviations.
+-   **Are ranges roughly similar across groups?** Similar ranges suggest similar variances.
 
-Are ranges roughly similar across groups? Similar ranges suggest similar variances.
-
-Check homogeneity across groups
+### Check homogeneity across groups
 
 Verify that the homogeneity of variance (HOV) assumption holds.
 
-{r levene-test}
+```{r levene-test}
 # Levene's test for homogeneity of variance
 leveneTest(response ~ group, data = df) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-{r brown-forsythe}
+```{r brown-forsythe}
 # Brown-Forsythe test (more robust to non-normality)
 leveneTest(response ~ group, data = df, center = median) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-Key points:
+**Key points:**
 
-Do standard deviations appear similar across groups? Use a rough 2:1 maximum-to-minimum ratio as a guideline.
+-   **Do standard deviations appear similar across groups?** Use a rough 2:1 maximum-to-minimum ratio as a guideline.
+-   **Does any group show both the lowest and highest value?** This pattern may indicate a response to observation (Hawthorne effect) rather than treatment.
+-   **Consider sample size effects.** Large samples make tests sensitive to trivial violations. Small samples may miss real violations.
 
-Does any group show both the lowest and highest value? This pattern may indicate a response to observation (Hawthorne effect) rather than treatment.
+## Identify Outliers
 
-Consider sample size effects. Large samples make tests sensitive to trivial violations. Small samples may miss real violations.
-
-Identify Outliers
-
-Find potential outliers
+### Find potential outliers
 
 Check for extreme values in any group.
 
-{r outliers}
+```{r outliers}
 # Identify outliers using IQR method
 df %>% 
   group_by(group) %>% 
@@ -244,48 +244,48 @@ df %>%
   filter(is_outlier) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-Questions to answer:
+**Questions to answer:**
 
-Do outliers appear in any groups? Look for points far from the group center.
-
-Are outliers extreme values consistent with the distribution, or are they errors? Consider whether outliers represent real but rare observations or data entry mistakes.
+-   **Do outliers appear in any groups?** Look for points far from the group center.
+-   **Are outliers extreme values consistent with the distribution, or are they errors?** Consider whether outliers represent real but rare observations or data entry mistakes.
 
 You'll assess whether these outliers influence your results after you fit your model.
 
-Verify Independence
+## Verify Independence
 
-Check that observations are independent
+### Check that observations are independent
 
 Verify that the independence assumption holds.
 
-{r independence-check}
+```{r independence-check}
 # Check for patterns by row number (collection order)
 df_indexed <- df %>% mutate(order = row_number())
 ggplot(df_indexed, aes(x = order, y = response, color = group)) + 
   geom_point() + 
   geom_smooth(se = FALSE) + 
   theme_minimal()
+```
 
-{r autocorrelation}
+```{r autocorrelation}
 # Check autocorrelation (if data have time ordering)
 acf(df$response, main = "Autocorrelation Function")
+```
 
-Questions to answer:
+**Questions to answer:**
 
-Were observations collected independently? Consider whether one observation could affect another.
-
-Is there clustering in your design? Repeated measures or nested designs violate independence.
-
-Does temporal or spatial ordering matter? Sequential observations may be correlated.
+-   **Were observations collected independently?** Consider whether one observation could affect another.
+-   **Is there clustering in your design?** Repeated measures or nested designs violate independence.
+-   **Does temporal or spatial ordering matter?** Sequential observations may be correlated.
 
 If independence is violated, you need mixed models or repeated measures ANOVA rather than standard ANOVA.
 
-Check for Interactions (Factorial Designs Only)
+## Check for Interactions (Factorial Designs Only)
 
 If you have two or more factors, assess whether they interact.
 
-{r factorial-data, include=FALSE}
+```{r factorial-data, include=FALSE}
 # Create factorial example
 df_factorial <- expand_grid(
   factor_A = c("A1", "A2"),
@@ -299,12 +299,13 @@ df_factorial <- expand_grid(
     + 15 * (factor_B == "B3") 
     + 20 * (factor_A == "A2" & factor_B == "B3") 
     +  rnorm(n(), 0, 8)) # Interaction
+```
 
-Examine two-way interactions
+### Examine two-way interactions
 
 Create interaction plots with one factor on the x-axis and separate lines for each level of the second factor.
 
-{r interaction-plot}
+```{r interaction-plot}
 # Interaction plot
 ggplot(df_factorial, 
        aes(x = factor_B, y = response, color = factor_A, group = factor_A)) +
@@ -312,81 +313,88 @@ ggplot(df_factorial,
   stat_summary(fun = mean, geom = "point", size = 3) +
   theme_minimal() + 
   labs(title = "Interaction Plot")
+```
 
-{r interaction-plot-alt}
+```{r interaction-plot-alt}
 # Alternative using base R
 with(df_factorial, interaction.plot(factor_B, factor_A, response))
+```
 
-Key patterns:
+**Key patterns:**
 
-Parallel lines indicate no interaction. Factors affect the response independently.
+-   **Parallel lines indicate no interaction.** Factors affect the response independently.
+-   **Converging lines suggest ordinal interaction.** One factor's effect diminishes at certain levels of the other factor.
+-   **Crossing lines indicate disordinal interaction.** The direction of one factor's effect reverses depending on the other factor's level.
 
-Converging lines suggest ordinal interaction. One factor's effect diminishes at certain levels of the other factor.
+## Choose Your Visualizations
 
-Crossing lines indicate disordinal interaction. The direction of one factor's effect reverses depending on the other factor's level.
+### Use plots that show multiple features
 
-Choose Your Visualizations
+**Raincloud plots capture multiple features simultaneously:**
 
-Use plots that show multiple features
-
-Raincloud plots capture multiple features simultaneously:
-
-{r raincloud}
+```{r raincloud}
 # Raincloud plot (requires ggrain package)
 ggplot(df, aes(x = group, y = response, fill = group)) +
   geom_rain(alpha = 0.5) +
   theme_minimal() + 
   theme(legend.position = "none") +
   labs(title = "Raincloud Plot: Distribution + Points + Boxplot")
+```
 
-Other useful plots:
+**Other useful plots:**
 
-{r violin-plot}
+```{r violin-plot}
 # Violin plot with points
 ggplot(df, aes(x = group, y = response, fill = group)) +
   geom_violin(alpha = 0.5) +
   geom_jitter(width = 0.1, alpha = 0.3) +
   stat_summary(fun = mean, geom = "point", size = 3, color = "red") +
   theme_minimal() + theme(legend.position = "none")
+```
 
-Decide Your Analysis Approach
+## Decide Your Analysis Approach
 
 Use what you found in your EDA to choose the appropriate analysis.
 
-If HOV is violated
+### If HOV is violated
 
-{r welch-anova}
+```{r welch-anova}
 # Welch's ANOVA (doesn't assume equal variances)
 oneway.test(response ~ group, data = df, var.equal = FALSE)
+```
 
-{r log-transform}
+```{r log-transform}
 # Try log transformation if variance increases with mean
 leveneTest(
   log_response ~ group, 
   data = df %>% mutate(log_response = log(response))) %>% 
   mutate(across(where(is.double), ~round(.x, 4))) %>% 
   DT::datatable()
+```
 
-If normality is violated
+### If normality is violated
 
-{r kruskal-wallis}
+```{r kruskal-wallis}
 # Kruskal-Wallis test (non-parametric alternative)
 kruskal.test(response ~ group, data = df)
+```
 
-If severe outliers exist
+### If severe outliers exist
 
-{r robust-anova}
+```{r robust-anova}
 # Trimmed means ANOVA (robust to outliers)
 library(WRS2)
+```
 
-{r }
+```{r }
 t1way(response ~ group, data = df, tr = 0.1)  # 10% trimming
+```
 
-Transform Data if Needed
+## Transform Data if Needed
 
-Apply transformations to skewed data
+### Apply transformations to skewed data
 
-{r transformations}
+```{r transformations}
 # Common transformations for positive skew
 df_transform <- df %>% 
   mutate(
@@ -401,8 +409,9 @@ df_transform %>%
   ggplot(aes(sample = value)) +
   stat_qq() + stat_qq_line(color = "red") +
   facet_wrap(~name, scales = "free") + theme_minimal()
+```
 
-{r box-cox}
+```{r box-cox}
 # Box-Cox transformation (finds optimal lambda)
 library(MASS)
 bc <- boxcox(response ~ group, data = as.data.frame(df))
@@ -411,5 +420,6 @@ df <- df %>%
   mutate(boxcox_y = (response^lambda - 1) / lambda)%>% 
   mutate(lambda = lambda)
 df
+```
 
 
