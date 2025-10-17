@@ -1,5 +1,5 @@
 ---
-title: "ANOVA Exploratory Data Analysis"
+title: "Pre-Modeling ANOVA EDA"
 output: html_document
 ---
 
