@@ -1,0 +1,317 @@
+---
+title: "Post-Modeling ANOVA EDA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(car)
+library(ggrain)
+library(multcomp)
+
+# Create example dataset for demonstrations
+df <- PlantGrowth %>% rename(response = weight)
+```
+
+# Post-Modeling ANOVA EDA
+
+## Why Check Model Diagnostics
+
+After you fit your ANOVA model, examine residuals to verify that your model meets assumptions. These checks reveal problems that raw data exploration might miss.
+
+```{r fit-model}
+# Fit ANOVA model
+model <- lm(response ~ group, data = df)
+anova_result <- anova(model)
+anova_result
+broom::tidy(anova_result)
+```
+
+## Check Residual Normality
+
+### Examine the overall model residuals
+
+Check whether your model residuals are approximately normal.
+
+```{r residual-qq}
+# QQ plot of residuals
+ggplot(data.frame(residuals = residuals(model)), aes(sample = residuals)) +
+  stat_qq() + 
+  stat_qq_line(color = "red") + 
+  theme_minimal() +
+  labs(title = "QQ Plot of Residuals")
+```
+
+```{r residual-histogram}
+# Density + Histogram of residuals
+ggplot(data.frame(residuals = residuals(model)), aes(x = residuals)) +
+  geom_density(fill = "steelblue", alpha = 0.7) +
+  geom_histogram(bins = 7, fill = "steelblue", alpha = 0.7) +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() + 
+  labs(title = "Distribution of Residuals")
+```
+
+```{r residual-normality-test}
+# Shapiro-Wilk test on residuals
+shapiro.test(residuals(model))
+```
+
+### Interpret normality violations
+
+```{r residuals-by-group}
+# Check residual normality within each group
+df %>% 
+  mutate(residuals = residuals(model)) %>%
+  ggplot(aes(sample = residuals)) +
+  stat_qq() + 
+  stat_qq_line(color = "red") +
+  facet_wrap(~group) + 
+  theme_minimal()
+```
+
+**Key points:**
+
+-   **With n \> 30 per group:** ANOVA is robust to moderate departures from normality.
+-   **With n \< 30 per group:** Even mild departures may affect your results.
+-   **Severe departures at any sample size:** Consider transformations or non-parametric alternatives.
+
+## Check Homogeneity of Variance
+
+### Examine residual plots
+
+Create plots to assess whether variance is constant.
+
+```{r residual-fitted}
+# Residuals vs fitted values
+ggplot(
+  data.frame(fitted = fitted(model), residuals = residuals(model)),
+  aes(x = fitted, y = residuals)
+  ) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  geom_smooth(se = FALSE) +
+  theme_minimal() + 
+  labs(title = "Residuals vs Fitted Values")
+```
+
+```{r residuals-by-group-plot}
+# Residuals by group
+df %>% 
+  mutate(residuals = residuals(model)) %>%
+  ggplot(aes(x = group, y = residuals, fill = group)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() + 
+  theme(legend.position = "none")
+```
+
+```{r scale-location}
+# Scale-Location plot (check for homoscedasticity)
+plot(model, which = 3)
+```
+
+## Assess Outlier Influence
+
+### Calculate influence diagnostics
+
+Determine whether outliers you identified earlier affect your conclusions.
+
+```{r cooks-distance}
+# Cook's distance
+cooks_d <- cooks.distance(model)
+influential <- which(cooks_d > 4/nrow(df))
+data.frame(observation = influential, cooks_d = cooks_d[influential]) %>% 
+  mutate(across(where(is.double), ~round(.x, 4))) %>% 
+  DT::datatable()
+```
+
+```{r cooks-plot}
+# Plot Cook's distance
+ggplot(
+  data.frame(index = 1:length(cooks_d), cooks_d = cooks_d),
+  aes(x = index, y = cooks_d)
+  ) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_hline(yintercept = 4/nrow(df), color = "red", linetype = "dashed") +
+  theme_minimal() + 
+  labs(title = "Cook's Distance")
+```
+
+```{r dffits}
+# DFFITS
+dffits_val <- dffits(model)
+threshold <- 2 * sqrt(length(coef(model)) / nrow(df))
+influential_dffits <- which(abs(dffits_val) > threshold)
+data.frame(
+  observation = influential_dffits, 
+  dffits = dffits_val[influential_dffits]
+  ) %>% mutate(across(where(is.double), ~round(.x, 4))) %>% 
+  DT::datatable()
+```
+
+```{r influence-plot}
+# Comprehensive influence plot
+plot(model, which = 5)  # Residuals vs Leverage
+```
+
+### Investigate influential points
+
+```{r sensitivity-analysis}
+# Compare models with and without influential points
+if(length(influential) > 0) {
+  model_reduced <- lm(response ~ group, data = df[-influential, ])
+  comparison <- data.frame(
+    model = c("Full", "Without influential"),
+    F_statistic = c(anova_result$`F value`[1], 
+                    anova(model_reduced)$`F value`[1]),
+    p_value = c(anova_result$`Pr(>F)`[1], 
+                anova(model_reduced)$`Pr(>F)`[1])
+  )
+  comparison %>% 
+    mutate(across(where(is.double), ~round(.x, 4))) %>% 
+    DT::datatable()
+}
+```
+
+## Check for Systematic Patterns
+
+### Look for residual patterns
+
+Examine residual plots for patterns that indicate model problems.
+
+```{r residual-patterns}
+# Residuals vs order (if data have temporal ordering)
+df_diagnostics <- df %>%
+  mutate(
+    residuals = residuals(model),
+    fitted = fitted(model),
+    order = row_number()
+  )
+
+ggplot(df_diagnostics, aes(x = order, y = residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(se = FALSE) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal() + 
+  labs(title = "Residuals vs Order")
+```
+
+```{r diagnostic-panel}
+# Standard diagnostic plots panel
+par(mfrow = c(2, 2))
+plot(model)
+par(mfrow = c(1, 1))
+```
+
+## Verify Your Decisions
+
+### Confirm your pre-modeling choices
+
+```{r compare-approaches}
+# Compare standard ANOVA vs Welch's ANOVA
+standard <- anova(model)
+welch <- oneway.test(response ~ group, data = df, var.equal = FALSE)
+
+paste0("Standard ANOVA p-value:", standard$`Pr(>F)`[1])
+paste0("Welch's ANOVA p-value:", welch$p.value)
+```
+
+```{r compare-transformations}
+# Compare original vs transformed data
+model_original <- lm(response ~ group, data = df)
+model_log <- lm(log(response) ~ group, data = df)
+
+paste0("Original data - Levene's test p-value:", leveneTest(response ~ group, data = df)$`Pr(>F)`[1])
+paste0("Log-transformed - Levene's test p-value:", leveneTest(log(response) ~ group, data = df)$`Pr(>F)`[1])
+```
+
+## Report Your Diagnostics
+
+### Create a diagnostic summary
+
+```{r diagnostic-summary}
+# Comprehensive diagnostic summary
+diagnostic_summary <- data.frame(
+  Test = c("Normality (Shapiro-Wilk)", 
+           "Homogeneity of Variance (Levene)",
+           "Number of influential points (Cook's D > 4/n)",
+           "Max Cook's Distance"),
+  Result = c(
+    shapiro.test(residuals(model))$p.value,
+    leveneTest(response ~ group, data = df)$`Pr(>F)`[1],
+    sum(cooks_d > 4/nrow(df)),
+    max(cooks_d)
+  )
+)
+diagnostic_summary %>% 
+    mutate(across(where(is.double), ~round(.x, 4))) %>% 
+    DT::datatable()
+```
+
+### Create publication-ready diagnostic figure
+
+```{r publication-diagnostics}
+library(patchwork)
+
+p1 <- ggplot(data.frame(residuals = residuals(model)), 
+             aes(sample = residuals)) +
+  stat_qq() + stat_qq_line(color = "red") + 
+  theme_minimal() + labs(title = "A. Normal Q-Q Plot")
+
+p2 <- ggplot(data.frame(fitted = fitted(model), 
+                        residuals = residuals(model)),
+             aes(x = fitted, y = residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  geom_smooth(se = FALSE) +
+  theme_minimal() + labs(title = "B. Residuals vs Fitted")
+
+p1 + p2
+```
+
+------------------------------------------------------------------------
+
+## Complete Workflow Example
+
+```{r complete-workflow}
+# Complete ANOVA workflow with diagnostics
+
+# 1. Check assumptions pre-modeling
+
+# PRE-MODELING CHECKS
+cat("PRE-MODELING CHECKS\n")
+# Sample sizes 
+table(df$group)
+
+# Descriptive statistics
+cat("Descriptive statistics\n")
+df %>% 
+  group_by(group) %>% 
+  summarize(mean = mean(response), sd = sd(response))
+
+# 2. Fit model
+model <- lm(response ~ group, data = df)
+
+# 3. Check diagnostics post-modeling
+
+# POST-MODELING DIAGNOSTICS
+cat("POST-MODELING CHECKS")
+paste0("Normality test p-value:", shapiro.test(residuals(model))$p.value)
+paste0("Levene's test p-value:", leveneTest(response ~ group, data = df)$`Pr(>F)`[1])
+paste0("Influential points:", sum(cooks.distance(model) > 4/nrow(df)))
+
+# 4. Report results
+
+# ANOVA RESULTS
+cat("ANOVA RESULTS\n")
+print(anova(model))
+
+# 5. Post-hoc comparisons if significant
+if(anova(model)$`Pr(>F)`[1] < 0.05) {
+  # POST-HOC COMPARISONS (Tukey HSD)
+  cat("POST-HOC COMPARISONS (Tukey HSD)\n")
+  print(TukeyHSD(aov(response ~ group, data = df)))
+}
+```
