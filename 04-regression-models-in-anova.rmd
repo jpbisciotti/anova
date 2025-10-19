@@ -1,0 +1,195 @@
+---
+title: "Regression Models in the ANOVA Framework"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load required packages
+library(quantreg)      # Quantile regression
+library(MASS)          # Negative binomial, polr
+library(survival)      # Survival models
+library(nnet)          # Multinomial models
+library(pscl)          # Zero-inflated models
+library(betareg)       # Beta regression
+library(VGAM)          # Tobit models
+```
+
+## Data Preparation
+
+```{r data}
+# Use mtcars and create derived variables for different model types
+data(mtcars)
+
+# Create binary outcome (0/1)
+mtcars$am_binary <- mtcars$am
+
+# Create proportion outcome (0,1) - exclude 0 and 1
+mtcars$prop_outcome <- (mtcars$mpg - min(mtcars$mpg)) / 
+                        (max(mtcars$mpg) - min(mtcars$mpg))
+mtcars$prop_outcome <- (mtcars$prop_outcome * 0.98) + 0.01
+
+# Create count outcome
+mtcars$count_outcome <- ifelse(mtcars$carb <= 2, 0, mtcars$carb - 2)
+
+# Create ordinal outcome
+mtcars$cyl_ordered <- factor(mtcars$cyl, ordered = TRUE)
+
+# Create categorical predictor
+mtcars$cyl_factor <- factor(mtcars$cyl)
+mtcars$gear_factor <- factor(mtcars$gear)
+
+# For survival models, create time and event
+mtcars$time <- mtcars$mpg
+mtcars$event <- mtcars$vs
+```
+
+---
+
+## 1. Linear Models (ANOVA)
+
+```{r linear_model}
+# Standard ANOVA with continuous outcome
+model_lm <- lm(mpg ~ cyl_factor + gear_factor, data = mtcars)
+```
+
+---
+
+## 2. Quantile Models (Quantile ANOVA)
+
+```{r quantile_model}
+# Quantile regression at median (tau = 0.5)
+model_quantile <- rq(mpg ~ cyl_factor + gear_factor, 
+                     tau = 0.5, data = mtcars)
+```
+
+---
+
+## 3. Generalized Linear Models - Logistic
+
+```{r glm_logistic}
+# Logistic regression with binary outcome
+model_logistic <- glm(am_binary ~ cyl_factor + gear_factor, 
+                      family = binomial(link = "logit"), 
+                      data = mtcars)
+```
+
+---
+
+## 4. Generalized Linear Models - Probit
+
+```{r glm_probit}
+# Probit regression with binary outcome
+model_probit <- glm(am_binary ~ cyl_factor + gear_factor, 
+                    family = binomial(link = "probit"), 
+                    data = mtcars)
+```
+
+---
+
+## 5. Generalized Linear Models - Log-linear (Poisson)
+
+```{r glm_poisson}
+# Poisson regression with count outcome
+model_poisson <- glm(count_outcome ~ cyl_factor + gear_factor, 
+                     family = poisson(link = "log"), 
+                     data = mtcars)
+```
+
+---
+
+## 6. Generalized Linear Models - Negative Binomial
+
+```{r glm_negbin}
+# Negative binomial regression for overdispersed counts
+model_negbin <- glm.nb(count_outcome ~ cyl_factor + gear_factor, 
+                       data = mtcars)
+```
+
+---
+
+## 7. Generalized Linear Models - Gamma
+
+```{r glm_gamma}
+# Gamma regression with positive continuous outcome
+model_gamma <- glm(mpg ~ cyl_factor + gear_factor, 
+                   family = Gamma(link = "log"), 
+                   data = mtcars)
+```
+
+---
+
+## 8. Survival Models - Cox Proportional Hazards
+
+```{r survival_cox}
+# Cox proportional hazards model
+model_cox <- coxph(Surv(time, event) ~ cyl_factor + gear_factor, 
+                   data = mtcars)
+```
+
+---
+
+## 9. Survival Models - Parametric (Weibull)
+
+```{r survival_parametric}
+# Parametric survival model with Weibull distribution
+model_weibull <- survreg(Surv(time, event) ~ cyl_factor + gear_factor, 
+                         data = mtcars, 
+                         dist = "weibull")
+```
+
+---
+
+## 10. Ordinal Models
+
+```{r ordinal_model}
+# Proportional odds ordinal logistic regression
+model_ordinal <- polr(cyl_ordered ~ gear_factor + am_binary, 
+                      data = mtcars, 
+                      method = "logistic")
+```
+
+---
+
+## 11. Multinomial Models
+
+```{r multinomial_model}
+# Multinomial logistic regression
+model_multinom <- multinom(cyl_factor ~ gear_factor + am_binary, 
+                          data = mtcars)
+```
+
+---
+
+## 12. Zero-Inflated Models
+
+```{r zeroinfl_model}
+# Zero-inflated Poisson model
+model_zip <- zeroinfl(count_outcome ~ cyl_factor + gear_factor | 1, 
+                      data = mtcars, 
+                      dist = "poisson")
+```
+
+---
+
+## 13. Beta Regression
+
+```{r beta_regression}
+# Beta regression for proportions in (0,1)
+model_beta <- betareg(prop_outcome ~ cyl_factor + gear_factor, 
+                      data = mtcars)
+```
+
+---
+
+## 14. Tobit Models
+
+```{r tobit_model}
+# Tobit model for censored continuous data
+model_tobit <- vglm(mpg ~ cyl_factor + gear_factor, 
+                    family = tobit(Lower = 10), 
+                    data = mtcars)
+```
+
