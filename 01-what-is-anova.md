@@ -2,26 +2,26 @@
 
 Use ANOVA to answer questions such as:
 
-- Do treatment groups differ in mean response?
-- Does mean outcome vary across groups?
-- Do combinations of groups produce different average results?
+- Do treatment groups differ in mean response? (omnibus)
+- Does mean outcome vary across groups? (effects)
+- Do combinations of groups produce different average results? (contrasts)
 
 ## Generally, what is ANOVA 
 
-ANOVA (analysis of variance) is a structured statistical framework that compares two or more groups using (conditional) functions. 
+ANOVA (analysis of variance) is a structured statistical framework that compares two or more groups using conditional functions. 
 
-Sections below explain in the above-mentioned definition what is meant by: 
+From the above-mentioned definition, we explain in sections below what is meant by: 
 - "Using condition functions"
 - "Structured statistical framework"
 - "Compare groups"
 
-But first, sections below cover: 
-- The common definition of ANOVA (less abstract, more specific/precise than above)
-- Requirements for ANOVA 
+However, before we explain those, we cover: 
+- The common definition of ANOVA (less abstract than definition above)
+- Fundamental requirements for ANOVA 
 
 ## Often, what is ANOVA
 
-ANOVA often is introduced as "a test to compare the *means* of two or more groups", which technically is true because ANOVA *can* be used to compare group means. However, this definition is narrow and misleading because, more generally, ANOVA can be used to compare groups values for any of the following (conditional) functions: 
+ANOVA often is introduced as "a test to compare the *means* of two or more groups", which technically is true because ANOVA *can* be used to compare group means. However, this definition is narrow and misleading because, more generally, ANOVA can be used to compare groups values for any of the following conditional functions: 
 
 | Model               | Conditional Function  | Compares          |
 |---------------------|-----------------------|-------------------|
@@ -32,7 +32,7 @@ ANOVA often is introduced as "a test to compare the *means* of two or more group
 
 The comparison of *means* is just one application (the most common) of the general ANOVA framework. 
 
-## Requirements for ANOVA
+## Fundamental Requirements for ANOVA
 
 An ANOVA model design requires:
 
@@ -40,24 +40,26 @@ An ANOVA model design requires:
 - Categorical predictors (factors)
 - Optional numerical control variables (covariates)
 
-*Note: the above-mentioned requirements have exceptions (e.g., MANOVA for multiple responses, ...)*
+Note about the above-mentioned requirements: 
+- They are short list (i.e., fundamental)
+- They have exceptions (e.g., MANOVA for multiple responses, ...)
 
-## What is meant by "Using Condition Functions"
+## What is meant by "Using Conditional Functions"
 
-Consider the rate of success for individuals who received a treatment 
-- The rate of success is the function
-- Individuals who received a treatment is a group 
+Consider the rate of success for individuals who received a treatment: 
+- The rate of success is the *function*
+- A treatment is a *group* 
 
 A "conditional" function is calculated for each group: 
-- The categorical predictors are also known as factors
-- The factors contain groups known as levels
-- The levels have conditional distributions
+- The categorical predictors are also known as *factors*
+- The factors contain groups known as *levels*
+- The levels have a *conditional distribution*
 
-*Recall: a distribution is characterized by shape, center, and spread.*
+*RE conditional distributions: recall a distribution is characterized by shape, center, and spread.*
 
 ## What is meant by "Structured Statistical Framework"
 
-ANOVA Framework may involve these key steps: 
+ANOVA Framework may involve these key (structured) steps: 
 - Start with a model that represents how variables may relate
 - From a model, get and interpret coefficients that quantitatively describe groups
 - From coefficients, get the condition distributions of the model function (e.g., the group means)
@@ -66,5 +68,5 @@ ANOVA Framework may involve these key steps:
 ## What is meant by "Compare Groups"
 
 ANOVA is used to compare groups, which may involve: 
-- Getting the difference between group means (effects)
-- Comparing specific groups or combinations of groups (contrasts)
+- Getting the difference between group means (i.e., effects)
+- Comparing specific groups or combinations of groups (i.e., contrasts)
