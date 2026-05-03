@@ -34,16 +34,6 @@ The comparison of *means* is just one application (the most common) of the gener
 
 *Clarification about logistic regression comparing proportions: Logistic regression compares log-odds on its native scale, proportions are recovered by back-transformation.* 
 
-## How ANOVA works in a linear model setting
-
-ANOVA compares groups by partitioning the total variation in your data into parts: *between-group variation* for how far each group's mean sits from the overall mean, *within-group variation* for how far each individual point sits from its own group's mean. 
-
-The split tells you whether group differences are noise or not.
-- Large between-group, small within-group → groups likely differ
-- Small between-group, large within-group → groups likely don't differ
-
-Comparison of groups using effects and contrasts is portable across model families, even though variance-partitioning is specific to the linear-model setting.
-
 ## Fundamental Requirements for ANOVA
 
 An ANOVA model design requires:
@@ -91,3 +81,15 @@ ANOVA is a structure statistical framework, which may include these steps:
 ANOVA is used to compare groups, which may involve: 
 - Getting the difference between group means (i.e., effects)
 - Comparing specific groups or combinations of groups (i.e., contrasts)
+
+## How ANOVA works in a linear model setting
+
+ANOVA compares groups by partitioning the total variation in your data into parts: 
+- *between-group variation* for how far each group's mean sits from the overall mean
+- *within-group variation* for how far each individual point sits from its own group's mean
+
+The split tells you whether group differences are noise or not.
+- Large between-group, small within-group → groups likely differ
+- Small between-group, large within-group → groups likely don't differ
+
+Even though variance-partitioning is specific to the linear-model setting, comparison of groups using effects and contrasts is portable across model families, .
