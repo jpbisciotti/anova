@@ -1,6 +1,6 @@
 ## About this document
 
-Modern statistics teaching has moved toward unifying regression, ANOVA, and GLMs under one framework.
+Modern statistics has moved toward unifying regression, ANOVA, and GLMs under one framework.
 This document introduces ANOVA and its motivation sits in this broader trend. 
 This document is appropriate for intermediate statistics learners. 
 Worked examples follow in later documents. 
