@@ -28,7 +28,7 @@ ANOVA often is introduced as "a test to compare the *means* of two or more group
 | Linear regression   | E(Y\|X=x) = Xβ         | Arithmetic means  |
 | Logistic regression | logit(E(Y\|X=x)) = Xβ  | Proportions (%)   |
 | Quantile regression | Q_τ(Y\|X=x) = Xβ       | Medians/quantiles |
-| Cox regression      | λ(t|X) = λ₀(t)·exp(Xβ) | Hazards           |
+| Cox regression      | λ(t\|X) = λ₀(t)·exp(Xβ) | Hazards           |
 
 The comparison of *means* is just one application (the most common) of the general ANOVA framework. 
 
