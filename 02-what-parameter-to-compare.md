@@ -74,4 +74,4 @@ You want to know if one group tends to produce higher values than another.
 - Example: "Do patients on Drug A tend to report better pain relief than patients on Drug B?"
 - Method: Mann-Whitney
 
-This tests a tendency, not a specific parameter. People often mislabel it as a median test. It isn't.
+This tests a tendency, not a specific parameter. (It is sometimes mislabel it as a median test.)
